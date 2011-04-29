@@ -16,189 +16,102 @@
 
 #include "Menu.h"
 
-#include <string>
-#include <vector>
-
-#include <kroll/kroll.h>
-
 #include "MenuItem.h"
-#include "UI.h"
-
-using namespace std;
 
 namespace Titanium {
 
 Menu::Menu()
     : KAccessorObject("UI.Menu")
 {
-    this->SetMethod("appendItem", &Menu::_AppendItem);
-    this->SetMethod("getItemAt", &Menu::_GetItemAt);
-    this->SetMethod("insertItemAt", &Menu::_InsertItemAt);
-    this->SetMethod("removeItemAt", &Menu::_RemoveItemAt);
-    this->SetMethod("getLength", &Menu::_GetLength);
-    this->SetMethod("clear", &Menu::_Clear);
-    this->SetMethod("addItem", &Menu::_AddItem);
-    this->SetMethod("addSeparatorItem", &Menu::_AddSeparatorItem);
-    this->SetMethod("addCheckItem", &Menu::_AddCheckItem);
+    createPlatformMenu();
+    initBinding();
+}
+
+Menu::Menu(PlatformMenu* menu)
+    : KAccessorObject("UI.Menu")
+    , m_menu(menu)
+{
+    initBinding();
 }
 
 Menu::~Menu()
 {
-    this->children.clear();
+    releasePlatformMenu();
 }
 
-void Menu::_AddItem(const ValueList& args, KValueRef result)
+void Menu::initBinding()
 {
-    args.VerifyException("addItem", "?s m|0 s|0");
-    UI* binding = UI::GetInstance();
-
-    // Create a menu item object and add it to this item's submenu
-    AutoPtr<MenuItem> newItem = binding->__CreateMenuItem(args);
-    this->AppendItem(newItem);
-    result->SetObject(newItem);
+    SetMethod("appendItem", &Menu::_appendItem);
+    SetMethod("getItemAt", &Menu::_getItemAt);
+    SetMethod("insertItemAt", &Menu::_insertItemAt);
+    SetMethod("removeItemAt", &Menu::_removeItemAt);
+    SetMethod("getLength", &Menu::_getLength);
+    SetMethod("clear", &Menu::_clear);
+    SetMethod("addItem", &Menu::_addItem);
+    SetMethod("addSeparatorItem", &Menu::_addSeparatorItem);
+    SetMethod("addCheckItem", &Menu::_addCheckItem);
 }
 
-void Menu::_AddSeparatorItem(const ValueList& args, KValueRef result)
-{
-    UI* binding = UI::GetInstance();
-    AutoPtr<MenuItem> newItem = binding->__CreateSeparatorMenuItem(args);
-    this->AppendItem(newItem);
-    result->SetObject(newItem);
-}
-
-void Menu::_AddCheckItem(const ValueList& args, KValueRef result)
-{
-    UI* binding = UI::GetInstance();
-    AutoPtr<MenuItem> newItem = binding->__CreateCheckMenuItem(args);
-    this->AppendItem(newItem);
-    result->SetObject(newItem);
-}
-
-void Menu::_AppendItem(const ValueList& args, KValueRef result)
+void Menu::_appendItem(const ValueList& args, KValueRef result)
 {
     args.VerifyException("appendItem", "o");
-    KObjectRef o = args.at(0)->ToObject();
+    KObjectRef o = args.GetObject(0);
 
     AutoPtr<MenuItem> item = o.cast<MenuItem>();
     if (!item.isNull())
-    {
-        if (item->ContainsSubmenu(this))
-            throw ValueException::FromString("Tried to construct a recursive menu");
-        this->AppendItem(item);
-    }
+        appendItem(*item);
 }
 
-void Menu::_GetItemAt(const ValueList& args, KValueRef result)
+void Menu::_getItemAt(const ValueList& args, KValueRef result)
 {
     args.VerifyException("getItemAt", "i");
-    AutoPtr<MenuItem> item = this->GetItemAt(args.GetInt(0));
+    AutoPtr<MenuItem> item = getItemAt(args.GetInt(0));
     result->SetObject(item);
 }
 
-void Menu::_InsertItemAt(const ValueList& args, KValueRef result)
+void Menu::_insertItemAt(const ValueList& args, KValueRef result)
 {
     args.VerifyException("insertItemAt", "o,i");
-    KObjectRef o = args.at(0)->ToObject();
+    KObjectRef o = args.GetObject(0);
     AutoPtr<MenuItem> item = o.cast<MenuItem>();
+    unsigned int index = args.GetInt(1);
 
     if (!item.isNull())
-    {
-        if (item->ContainsSubmenu(this))
-            throw ValueException::FromString("Tried to construct a recursive menu");
-        size_t index = static_cast<size_t>(args.GetInt(1));
-        this->InsertItemAt(item, index);
-    }
+        insertItemAt(*item, index);
 }
 
-void Menu::_RemoveItemAt(const ValueList& args, KValueRef result)
+void Menu::_removeItemAt(const ValueList& args, KValueRef result)
 {
     args.VerifyException("removeItemAt", "i");
-    size_t index = static_cast<size_t>(args.GetInt(0));
-
-    this->RemoveItemAt(index);
+    unsigned int index = args.GetInt(0);
+    removeItemAt(index);
 }
 
-void Menu::_GetLength(const ValueList& args, KValueRef result)
+void Menu::_getLength(const ValueList& args, KValueRef result)
 {
-    result->SetInt(this->children.size());
+    result->SetInt(itemCount());
 }
 
-void Menu::_Clear(const ValueList& args, KValueRef result)
+void Menu::_clear(const ValueList& args, KValueRef result)
 {
-    this->children.clear();
-    this->ClearImpl();
+    clear();
 }
 
-void Menu::AppendItem(AutoPtr<MenuItem> item)
+void Menu::_addItem(const ValueList& args, KValueRef result)
 {
-    if (!item.isNull())
-    {
-        this->children.push_back(item);
-        this->AppendItemImpl(item);
-    }
+    args.VerifyException("addItem", "?s m|0 s|0");
+    // TODO: implement
 }
 
-AutoPtr<MenuItem> Menu::GetItemAt(int index)
+void Menu::_addSeparatorItem(const ValueList& args, KValueRef result)
 {
-    if (index >= 0 && (size_t) index < this->children.size()) {
-        return this->children[index];
-    } else {
-        throw ValueException::FromFormat("Index %i is out of range", index);
-    }
+    // TODO: implement
 }
 
-void Menu::InsertItemAt(AutoPtr<MenuItem> item, size_t index)
+void Menu::_addCheckItem(const ValueList& args, KValueRef result)
 {
-    if (item.isNull())
-    {
-        throw ValueException::FromString("Tried to insert an object that was not a MenuItem");
-    }
-
-    if (index >= 0 && index <= this->children.size())
-    {
-        vector<AutoPtr<MenuItem> >::iterator i = this->children.begin() + index;
-        this->children.insert(i, item);
-        this->InsertItemAtImpl(item, index);
-    }
-    else
-    {
-        throw ValueException::FromString("Tried to insert a MenuItem at an inavlid index");
-    }
-}
-
-void Menu::RemoveItemAt(size_t index)
-{
-    if (index >= 0 && index < this->children.size())
-    {
-        vector<AutoPtr<MenuItem> >::iterator i = this->children.begin() + index;
-        this->children.erase(i);
-        this->RemoveItemAtImpl(index);
-    }
-    else
-    {
-        throw ValueException::FromString("Tried to remove a MenuItem at an invalid index");
-    }
-}
-
-bool Menu::ContainsItem(MenuItem* item)
-{
-    for (size_t i = 0; i < this->children.size(); i++)
-    {
-        if (this->children.at(i).get() == item ||
-            this->children.at(i)->ContainsItem(item))
-            return true;
-    }
-    return false;
-}
-
-bool Menu::ContainsSubmenu(Menu* submenu)
-{
-    for (size_t i = 0; i < this->children.size(); i++)
-    {
-        if (this->children.at(i)->ContainsSubmenu(submenu))
-            return true;
-    }
-    return false;
+    // TODO: implement
 }
 
 } // namespace Titanium
+

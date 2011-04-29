@@ -20,7 +20,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "MenuMac.h"
+#include "../Menu.h"
 #include "UIMac.h"
 #include "../../ti.App/WindowConfig.h"
 
@@ -662,12 +662,7 @@ void UserWindowMac::SetUsingChrome(bool chrome)
 
 void UserWindowMac::SetMenu(AutoPtr<Menu> menu)
 {   
-    if (this->menu.get() == menu.get())
-    {
-        return;
-    }
-    this->menu = menu.cast<MenuMac>();
-    osxBinding->SetupMainMenu();
+    // TODO: implement
 }
 
 AutoPtr<Menu> UserWindowMac::GetMenu()
@@ -687,7 +682,7 @@ void UserWindowMac::Unfocused()
 
 void UserWindowMac::SetContextMenu(AutoPtr<Menu> menu)
 {
-    this->contextMenu = menu.cast<MenuMac>();
+    this->contextMenu = menu;
 }
 
 AutoPtr<Menu> UserWindowMac::GetContextMenu()

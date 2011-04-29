@@ -24,7 +24,7 @@
 
 namespace Titanium {
 
-class MenuMac;
+class Menu;
 
 class TrayItemMac: public TrayItem {
 public:
@@ -39,7 +39,7 @@ public:
 
 private:
     NSMenu* nativeMenu;
-    AutoPtr<MenuMac> menu;
+    AutoPtr<Menu> menu;
     KMethodRef callback;
     NSStatusItem* nativeItem;
 };

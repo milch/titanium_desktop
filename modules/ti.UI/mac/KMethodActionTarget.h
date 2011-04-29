@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2010 Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2011 Appcelerator, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,34 +14,17 @@
  * limitations under the License.
  */
 
-#import "MenuItemDelegate.h"
+#include <Foundation/Foundation.h>
 
-#include "MenuItemMac.h"
+#include <kroll/kroll.h>
 
-@implementation MenuItemDelegate
-
--(id)initWithMenuItem:(Titanium::MenuItemMac*)inMenuItem
+@interface KMethodActionTarget : NSObject
 {
-    if ([super init]) {
-        menuItem = inMenuItem;
-    }
-    return self;
+    kroll::KMethodRef actionCallback;
 }
 
--(void)dealloc
-{
-    menuItem = nil;
-    [super dealloc];
-}
-
--(void)invoke:(id)sender
-{
-    menuItem->HandleClickEvent(NULL);
-}
-
--(Titanium::MenuItemMac*)getMenuItem
-{
-    return menuItem;
-}
+- (id)initWithCallback:(kroll::KMethodRef) callback;
+- (void)activate:(id)sender;
 
 @end
+

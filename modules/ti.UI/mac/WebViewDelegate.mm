@@ -18,7 +18,7 @@
 
 #include <kroll/javascript/javascript_module.h>
 
-#include "MenuMac.h"
+#include "../Menu.h"
 #include "UserWindowMac.h"
 #include "../UI.h"
 
@@ -568,20 +568,6 @@ using namespace Titanium;
 -(void)showInspector
 {
     [window userWindow]->ShowInspector();
-}
-
-- (NSArray *)webView:(WebView *)sender contextMenuItemsForElement:(NSDictionary *)element defaultMenuItems:(NSArray *)defaultMenuItems
-{
-    UserWindow* uw = [window userWindow];
-    AutoPtr<MenuMac> menu = uw->GetContextMenu().cast<MenuMac>();
-    if (menu.isNull())
-        menu = UI::GetInstance()->GetContextMenu().cast<MenuMac>();
-
-    NSMutableArray* menuItems = [[[NSMutableArray alloc] init] autorelease];
-    if (!menu.isNull())
-        menu->AddChildrenToNSArray(menuItems);
-
-    return menuItems;
 }
 
 // return whether or not quota has been reached for a db (enabling db support)

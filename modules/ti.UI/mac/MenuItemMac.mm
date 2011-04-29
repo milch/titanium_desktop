@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010 Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2011 Appcelerator, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,204 +14,123 @@
  * limitations under the License.
  */
 
-#include "MenuItemMac.h"
+#include "../MenuItem.h"
 
-#include "MenuItemDelegate.h"
-#include "MenuMac.h"
+#import <AppKit/AppKit.h>
+
+#import "KMethodActionTarget.h"
 #include "UIMac.h"
+#include "../Menu.h"
 
 namespace Titanium {
 
-MenuItemMac::MenuItemMac(MenuItemType type)
-    : MenuItem(type)
+void MenuItem::setLabel(const std::string& label)
 {
+    NSString* title = [NSString stringWithUTF8String:label.c_str()];
+    [m_menuItem setTitle:title];
+
+    NSMenu* submenu = [m_menuItem submenu];
+    if (submenu)
+        [submenu setTitle:title];
 }
 
-MenuItemMac::~MenuItemMac()
+std::string MenuItem::getLabel() const
 {
+    NSString* title = [m_menuItem title];
+    return [title UTF8String];
 }
 
-void MenuItemMac::SetLabelImpl(std::string newLabel)
+void MenuItem::setIcon(const std::string& iconURL)
 {
-    if (this->type == SEPARATOR)
-        return;
-    this->UpdateNativeMenuItems();
+    NSImage* iconImage = UIMac::MakeImage(iconURL);
+    [m_menuItem setImage:iconImage];
+    [iconImage release];
+    m_iconURL = iconURL;
 }
 
-void MenuItemMac::SetIconImpl(std::string newIconPath)
+bool MenuItem::getState() const
 {
-    if (this->type == SEPARATOR || this->type == CHECK)
-        return;
-    this->UpdateNativeMenuItems();
+    return [m_menuItem state];
 }
 
-void MenuItemMac::SetStateImpl(bool newState)
+void MenuItem::setState(bool state)
 {
-    if (this->type != CHECK)
-        return;
-    this->UpdateNativeMenuItems();
+    NSInteger itemState = state ? NSOnState : NSOffState;
+    [m_menuItem setState:itemState];
 }
 
-void MenuItemMac::SetSubmenuImpl(AutoPtr<Menu> newSubmenu)
+bool MenuItem::isSeparator() const
 {
-    if (this->type == SEPARATOR)
-        return;
-    this->UpdateNativeMenuItems();
+    return [m_menuItem isSeparatorItem];
 }
 
-void MenuItemMac::SetEnabledImpl(bool enabled)
+bool MenuItem::isCheck() const
 {
-    if (this->type == SEPARATOR)
-        return;
-    this->UpdateNativeMenuItems();
+    return m_checkItem;
 }
 
-/*static*/
-void MenuItemMac::SetNSMenuItemTitle(NSMenuItem* item, std::string& title)
+void MenuItem::setEnabled(bool enabled)
 {
-    NSString* nstitle = [NSString stringWithUTF8String:title.c_str()];
-    [item setTitle:nstitle];
+    [m_menuItem setEnabled:enabled];
+}
 
-    NSMenu* submenu = [item submenu];
-    if (submenu != nil)
-    {
-        // Need to set the new native menu's title as this item's label. Each
-        // native menu will have to use the title of the item it is attached to.
-        [submenu setTitle:nstitle];
+bool MenuItem::isEnabled() const
+{
+    return [m_menuItem isEnabled];
+}
+
+void MenuItem::setSubmenu(AutoPtr<Menu> submenu)
+{
+    NSMenu* menu = submenu->m_menu;
+    [m_menuItem setSubmenu:menu];
+}
+
+AutoPtr<Menu> MenuItem::getSubmenu() const
+{
+    NSMenu* menu = [m_menuItem submenu];
+    return new Menu(menu);
+}
+
+void MenuItem::addItem(const MenuItem& item)
+{
+    NSMenu* submenu = [m_menuItem submenu];
+    if (submenu == nil)
+        throw ValueException::FromString("Menu item has no submenu");
+
+    [submenu addItem:item.m_menuItem];
+}
+
+void MenuItem::setActivationCallback(KMethodRef callback)
+{
+    KMethodActionTarget* target;
+    target = [[KMethodActionTarget alloc] initWithCallback:callback];
+    [m_menuItem setTarget:target];
+    [m_menuItem setAction:@selector(activate:)];
+}
+
+void MenuItem::createPlatformMenuItem(MenuItemType type, const std::string& label)
+{
+    NSString* title;
+
+    switch (type) {
+    case CHECK:
+        m_checkItem = true;
+    case NORMAL:
+        title = [NSString stringWithUTF8String:label.c_str()];
+        m_menuItem = [[NSMenuItem alloc] initWithTitle:title
+                                         action:@selector(activate:)
+                                         keyEquivalent:@""];
+        break;
+    case SEPARATOR:
+        m_menuItem = [NSMenuItem separatorItem];
+        break;
     }
 }
 
-/*static*/
-void MenuItemMac::SetNSMenuItemIconPath(
-    NSMenuItem* item, std::string& iconPath, NSImage* image)
+void MenuItem::releasePlatformMenuItem()
 {
-    bool needsRelease = false;
-
-    // If we weren't passed an image, create one for this call. This
-    // allows callers to do one image creation in cases where the same
-    // image is used over and over again.
-    if (image == nil) {
-        image = UIMac::MakeImage(iconPath);
-        needsRelease = true;
-    }
-
-    if (!iconPath.empty()) {
-        [item setImage:image];
-    } else {
-        [item setImage:nil];
-    }
-
-    if (needsRelease) {
-        [image release];
-    }
-}
-
-/*static*/
-void MenuItemMac::SetNSMenuItemState(NSMenuItem* item, bool state)
-{
-    [item setState:state ? NSOnState : NSOffState];
-}
-
-/*static*/
-void MenuItemMac::SetNSMenuItemSubmenu(
-    NSMenuItem* item, AutoPtr<Menu> submenu, bool registerNative)
-{
-    if (!submenu.isNull()) {
-        AutoPtr<MenuMac> osxSubmenu = submenu.cast<MenuMac>();
-        NSMenu* nativeMenu = osxSubmenu->CreateNativeLazily(registerNative);
-        [nativeMenu setTitle:[item title]];
-        [item setSubmenu:nativeMenu];
-
-    } else {
-        [item setSubmenu:nil];
-    }
-}
-
-/*static*/
-void MenuItemMac::SetNSMenuItemEnabled(NSMenuItem* item, bool enabled)
-{
-    [item setEnabled:(enabled ? YES : NO)];
-}
-
-NSMenuItem* MenuItemMac::CreateNative(bool registerNative)
-{
-    if (this->IsSeparator()) {
-        return [NSMenuItem separatorItem];
-    } else {
-        NSMenuItem* item = [[NSMenuItem alloc] 
-            initWithTitle:@"Temp" action:@selector(invoke:) keyEquivalent:@""];
-
-        MenuItemDelegate* delegate = [[MenuItemDelegate alloc] initWithMenuItem:this];
-        [item setTarget:delegate];
-
-        SetNSMenuItemTitle(item, this->label);
-        SetNSMenuItemIconPath(item, this->iconPath);
-        SetNSMenuItemState(item, this->state);
-        SetNSMenuItemEnabled(item, this->enabled);
-        SetNSMenuItemSubmenu(item, this->submenu, registerNative);
-
-        if (registerNative)
-        {
-            this->nativeItems.push_back(item);
-        }
-
-        return item;
-    }
-}
-
-void MenuItemMac::DestroyNative(NSMenuItem* realization)
-{
-    std::vector<NSMenuItem*>::iterator i = this->nativeItems.begin();
-    while (i != this->nativeItems.end())
-    {
-        NSMenuItem* item = *i;
-        if (item == realization)
-        {
-            i = this->nativeItems.erase(i);
-            if (!this->submenu.isNull() && [item submenu] != nil)
-            {
-                AutoPtr<MenuMac> osxSubmenu = this->submenu.cast<MenuMac>();
-                osxSubmenu->DestroyNative([item submenu]);
-            }
-            [item release];
-        }
-        else
-        {
-            i++;
-        }
-    }
-}
-
-void MenuItemMac::UpdateNativeMenuItems()
-{
-    std::vector<NSMenuItem*>::iterator i = this->nativeItems.begin();
-    while (i != this->nativeItems.end())
-    {
-        NSMenuItem* nativeItem = (*i++);
-        if ([nativeItem menu]) {
-            MenuMac::UpdateNativeMenu([nativeItem menu]);
-        }
-    }
-
-    // Must now iterate through the native menus and fix
-    // the main menu -- it will modify this iterator so we
-    // must do it in isolation.
-    i = this->nativeItems.begin();
-    while (i != this->nativeItems.end())
-    {
-        NSMenuItem* nativeItem = (*i++);
-        if ([nativeItem menu] == [NSApp mainMenu]) {
-            UIMac* binding =
-                dynamic_cast<UIMac*>(UI::GetInstance());
-            binding->SetupMainMenu(true);
-            break;
-        }
-    }
-}
-
-void MenuItemMac::HandleClickEvent(KObjectRef source)
-{
-    MenuItem::HandleClickEvent(source);
+    [m_menuItem release];
 }
 
 } // namespace Titanium
+

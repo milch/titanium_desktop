@@ -48,7 +48,7 @@ UI::UI()
     this->SetMethod("addTray", &UI::_AddTray);
     this->SetMethod("clearTray", &UI::_ClearTray);
     this->SetMethod("setDockIcon", &UI::_SetDockIcon);
-    this->SetMethod("setDockMenu", &UI::_SetDockMenu);
+    this->SetMethod("getDockMenu", &UI::_GetDockMenu);
     this->SetMethod("setBadge", &UI::_SetBadge);
     this->SetMethod("setBadgeImage", &UI::_SetBadgeImage);
     this->SetMethod("getIdleTime", &UI::_GetIdleTime);
@@ -193,9 +193,9 @@ AutoPtr<MenuItem> UI::__CreateMenuItem(const ValueList& args)
 
     AutoPtr<MenuItem> item = this->CreateMenuItem();
     if (!label.empty())
-        item->SetLabel(label);
+        item->setLabel(label);
     if (!iconURL.empty())
-        item->SetIcon(iconURL);
+        item->setIcon(iconURL);
     if (!eventListener.isNull())
         item->AddEventListener(Event::CLICKED, eventListener);
 
@@ -216,7 +216,7 @@ AutoPtr<MenuItem> UI::__CreateCheckMenuItem(const ValueList& args)
 
     AutoPtr<MenuItem> item = this->CreateCheckMenuItem();
     if (!label.empty())
-        item->SetLabel(label);
+        item->setLabel(label);
     if (!eventListener.isNull())
         item->AddEventListener(Event::CLICKED, eventListener);
 
@@ -354,11 +354,10 @@ void UI::_SetDockIcon(const ValueList& args, KValueRef result)
 #endif
 }
 
-void UI::_SetDockMenu(const ValueList& args, KValueRef result)
+void UI::_GetDockMenu(const ValueList& args, KValueRef result)
 {
 #if defined(OS_OSX)
-    AutoPtr<Menu> menu(args.GetObject(0, 0).cast<Menu>());
-    this->SetDockMenu(menu);
+    result->SetObject(GetDockMenu());
 #endif
 }
 

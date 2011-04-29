@@ -22,8 +22,8 @@
 #import "TitaniumApplicationDelegate.h"
 #import "TitaniumProtocols.h"
 
-#include "MenuItemMac.h"
-#include "MenuMac.h"
+#include "../MenuItem.h"
+#include "../Menu.h"
 #include "TrayItemMac.h"
 #include "UserWindowMac.h"
 
@@ -47,12 +47,8 @@
 namespace Titanium {
 
 UIMac::UIMac()
-    : defaultMenu(nil)
-    , menu(0)
-    , nativeMenu(nil)
-    , contextMenu(0)
+    : contextMenu(0)
     , dockMenu(0)
-    , nativeDockMenu(nil)
     , activeWindow(0)
 {
     TitaniumApplicationDelegate* application = [[TitaniumApplicationDelegate alloc] initWithBinding:this];
@@ -62,15 +58,6 @@ UIMac::UIMac()
     [nsapp setDelegate:application];
     [NSBundle loadNibNamed:@"MainMenu" owner:nsapp];
 
-    // Create a default menu -- so that keybindings and such work out of the box.
-    this->defaultMenu = [NSApp mainMenu];
-
-    NSString* appName = [NSString
-        stringWithUTF8String:Host::GetInstance()->GetApplication()->name.c_str()];
-    MenuMac::ReplaceAppNameStandinInMenu(this->defaultMenu, appName);
-    MenuMac::SetupInspectorItem(this->defaultMenu);
-    this->SetupMainMenu(true);
-
     // Register our custom URL handler
     [NSURLProtocol registerClass:[TitaniumProtocols class]];
 
@@ -79,6 +66,8 @@ UIMac::UIMac()
     // make sure this is part of the upcoming security work
     [WebView registerURLSchemeAsLocal:@"app"];
     [WebView registerURLSchemeAsLocal:@"ti"];
+
+    menu = new Menu([nsapp mainMenu]);
 }
 
 UIMac::~UIMac()
@@ -89,38 +78,37 @@ UIMac::~UIMac()
 
 AutoPtr<Menu> UIMac::CreateMenu()
 {
-    return new MenuMac();
+    return new Menu();
 }
 
 AutoPtr<MenuItem> UIMac::CreateMenuItem()
 {
-    return new MenuItemMac(MenuItem::NORMAL);
+    return new MenuItem(MenuItem::NORMAL);
 }
 
 AutoPtr<MenuItem> UIMac::CreateSeparatorMenuItem()
 {
-    return new MenuItemMac(MenuItem::SEPARATOR);
+    return new MenuItem(MenuItem::SEPARATOR);
 }
 
 AutoPtr<MenuItem> UIMac::CreateCheckMenuItem()
 {
-    return new MenuItemMac(MenuItem::CHECK);
+    return new MenuItem(MenuItem::CHECK);
 }
 
 void UIMac::SetMenu(AutoPtr<Menu> menu)
 {
-    if (this->menu.get() == menu.get())
-    {
-        return;
-    }
-    AutoPtr<MenuMac> osxmenu = menu.cast<MenuMac>();
-    this->menu = osxmenu;
-    SetupMainMenu();
+    // TODO: implement
 }
 
 void UIMac::SetContextMenu(AutoPtr<Menu> menu)
 {
-    this->contextMenu = menu.cast<MenuMac>();
+    this->contextMenu = menu;
+}
+
+void UIMac::initDockMenu(Menu* menu)
+{
+    this->dockMenu = menu;
 }
 
 void UIMac::SetDockIcon(string& badgePath)
@@ -162,7 +150,7 @@ void UIMac::SetDockIcon(string& badgePath)
     [dockTile display];
 }
 
-NSImage* UIMac::MakeImage(string& iconURL)
+NSImage* UIMac::MakeImage(const string& iconURL)
 {
     NSString* iconString = [NSString stringWithUTF8String:iconURL.c_str()];
     if (FileUtils::IsFile(iconURL)) {
@@ -175,75 +163,11 @@ NSImage* UIMac::MakeImage(string& iconURL)
 void UIMac::WindowFocused(AutoPtr<UserWindowMac> window)
 {
     this->activeWindow = window;
-    this->SetupMainMenu();
 }
 
 void UIMac::WindowUnfocused(AutoPtr<UserWindowMac> window)
 {
     this->activeWindow = NULL;
-    this->SetupMainMenu();
-}
-
-NSMenu* UIMac::GetDefaultMenu()
-{
-    return this->defaultMenu;
-}
-
-AutoPtr<MenuMac> UIMac::GetActiveMenu()
-{
-    return this->activeMenu;
-}
-
-void UIMac::SetupMainMenu(bool force)
-{
-    AutoPtr<MenuMac> newActiveMenu = NULL;
-
-    // If there is an active window, search there first for the menu
-    if (!this->activeWindow.isNull()) {
-        newActiveMenu = this->activeWindow->GetMenu().cast<MenuMac>();
-    }
-
-    // No active window or that window has no menu, try to use the app menu
-    if (newActiveMenu.isNull()) {
-        newActiveMenu = this->menu;
-    }
-
-    if (force || newActiveMenu.get() != this->activeMenu.get()) {
-        AutoPtr<MenuMac> oldMenu = this->activeMenu; // Save a reference
-        NSMenu* oldNativeMenu = [NSApp mainMenu];
-
-        // Actually create and install the new menu
-        NSMenu* newNativeMenu = nil;
-        if (newActiveMenu.isNull()) {
-            newNativeMenu = this->GetDefaultMenu();
-        } else {
-            newNativeMenu = [[NSMenu alloc] init];
-            newActiveMenu->FillNativeMainMenu(defaultMenu, newNativeMenu);
-        }
-        SetupAppMenuParts(newNativeMenu);
-        [NSApp setMainMenu:newNativeMenu];
-        this->activeMenu = newActiveMenu;
-
-        // Cleanup the old native menu
-        if (!oldMenu.isNull() && oldNativeMenu
-            && oldNativeMenu != this->GetDefaultMenu()) {
-            oldMenu->DestroyNative(oldNativeMenu);
-        }
-    }
-}
-
-void UIMac::SetupAppMenuParts(NSMenu* nativeMainMenu)
-{
-    MenuMac::FixWindowMenu(nativeMainMenu);
-    [NSApp setWindowsMenu:MenuMac::GetWindowMenu(nativeMainMenu)];
-    [NSApp performSelector:@selector(setAppleMenu:)
-        withObject:MenuMac::GetAppleMenu(nativeMainMenu)];
-    [NSApp setServicesMenu:MenuMac::GetServicesMenu(nativeMainMenu)];
-}
-
-void UIMac::SetDockMenu(AutoPtr<Menu> menu)
-{
-    this->dockMenu = menu.cast<MenuMac>();
 }
 
 void UIMac::SetBadge(string& badgeLabel)

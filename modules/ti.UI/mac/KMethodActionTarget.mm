@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010 Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2011 Appcelerator, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-#import <AppKit/NSMenu.h>
+#import "KMethodActionTarget.h"
 
-#include "MenuMac.h"
+@implementation KMethodActionTarget
 
-@interface MenuDelegate : NSObject
+- (id)initWithCallback:(KMethodRef)callback
 {
-    Titanium::MenuMac* menu;
-    BOOL dirty;
-    BOOL registerNative;
+    self = [super init];
+    if (self) {
+        actionCallback = callback;
+    }
+    return self;
 }
-- (id)initWithMenu:(Titanium::MenuMac*)menu willRegister:(BOOL)willRegister;
 
-- (NSInteger)numberOfItemsInMenu:(NSMenu *)menu;
-- (void)menuNeedsUpdate:(NSMenu *)menu;
-
-- (void)markAsDirty;
+- (void)activate:(id)sender
+{
+    actionCallback->Call();
+}
 
 @end
+

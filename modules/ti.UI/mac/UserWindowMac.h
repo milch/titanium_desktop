@@ -24,8 +24,8 @@
 
 namespace Titanium {
 
-class MenuItemMac;
-class MenuMac;
+class MenuItem;
+class Menu;
 class UIMac;
 class WindowConfig;
 
@@ -123,8 +123,8 @@ private:
     NativeWindow* nativeWindow;
     unsigned int nativeWindowMask;
     bool focused;
-    AutoPtr<MenuMac> menu;
-    AutoPtr<MenuMac> contextMenu;
+    AutoPtr<Menu> menu;
+    AutoPtr<Menu> contextMenu;
     AutoPtr<UIMac> osxBinding;
     static bool initial;
     std::string iconPath;

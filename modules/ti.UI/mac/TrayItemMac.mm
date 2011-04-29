@@ -20,7 +20,7 @@
 
 #import "TrayItemDelegate.h"
 
-#include "MenuMac.h"
+#include "../Menu.h"
 #include "UIMac.h"
 
 namespace Titanium {
@@ -45,9 +45,6 @@ TrayItemMac::TrayItemMac(std::string& iconURL, KMethodRef cb) :
 
 TrayItemMac::~TrayItemMac()
 {
-    if (!this->menu.isNull() && this->nativeMenu) {
-        this->menu->DestroyNative(this->nativeMenu);
-    }
 }
 
 void TrayItemMac::SetIcon(std::string& iconPath)
@@ -58,22 +55,7 @@ void TrayItemMac::SetIcon(std::string& iconPath)
 
 void TrayItemMac::SetMenu(AutoPtr<Menu> menu)
 {
-    if (menu.get() == this->menu.get()) {
-        return;
-    }
-
-    AutoPtr<MenuMac> newMenu = menu.cast<MenuMac>();
-    NSMenu* newNativeMenu = nil;
-    if (!newMenu.isNull()) {
-        newNativeMenu = newMenu->CreateNativeNow(true);
-    }
-
-    if (!this->menu.isNull() && this->nativeMenu) {
-        this->menu->DestroyNative(this->nativeMenu);
-    }
-
-    this->menu = newMenu;
-    this->nativeMenu = newNativeMenu;
+    // TODO: implement
 }
 
 void TrayItemMac::SetHint(std::string& hint)

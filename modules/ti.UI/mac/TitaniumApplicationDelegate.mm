@@ -19,19 +19,15 @@
 #import <Cocoa/Cocoa.h>
 #import <AppKit/AppKit.h>
 
-#include "MenuMac.h"
+#include "../Menu.h"
 
 @implementation TitaniumApplicationDelegate
 
 - (NSMenu *)applicationDockMenu:(NSApplication *)sender
 {
-    AutoPtr<Titanium::MenuMac> menu = binding->GetDockMenu().cast<Titanium::MenuMac>();
-    if (!menu.isNull()) {
-        NSMenu* nativeMenu = menu->CreateNativeNow(false);
-        return nativeMenu;
-    } else {
-        return nil;
-    }
+    NSMenu* dockMenu = [[NSMenu alloc] initWithTitle:@""];
+    binding->initDockMenu(new Titanium::Menu(dockMenu));
+    return dockMenu;
 }
 
 - (id)initWithBinding:(Titanium::UIMac*)b

@@ -19,6 +19,11 @@
 
 #include <kroll/kroll.h>
 
+#ifdef OS_OSX
+@class NSMenuItem;
+typedef NSMenuItem PlatformMenuItem;
+#endif
+
 namespace Titanium {
 
 class Menu;
@@ -31,61 +36,56 @@ public:
         CHECK
     };
 
-    MenuItem(MenuItemType type);
+    MenuItem(MenuItemType type, const std::string& label="");
+    MenuItem(PlatformMenuItem* item);
     ~MenuItem();
 
-    void _IsSeparator(const ValueList& args, KValueRef result);
-    void _IsCheck(const ValueList& args, KValueRef result);
-    void _SetLabel(const ValueList& args, KValueRef result);
-    void _GetLabel(const ValueList& args, KValueRef result);
-    void _SetIcon(const ValueList& args, KValueRef result);
-    void _GetIcon(const ValueList& args, KValueRef result);
-    void _SetState(const ValueList& args, KValueRef result);
-    void _GetState(const ValueList& args, KValueRef result);
-    void _SetAutoCheck(const ValueList& args, KValueRef result);
-    void _IsAutoCheck(const ValueList& args, KValueRef result);
-    void _SetSubmenu(const ValueList& args, KValueRef result);
-    void _GetSubmenu(const ValueList& args, KValueRef result);
-    void _Enable(const ValueList& args, KValueRef result);
-    void _Disable(const ValueList& args, KValueRef result);
-    void _IsEnabled(const ValueList& args, KValueRef result);
-    void _Click(const ValueList& args, KValueRef result);
+    void setLabel(const string& label);
+    std::string getLabel() const;
+    void setIcon(const string& iconURL);
+    std::string getIcon() const;
+    bool getState() const;
+    void setState(bool state);
+    bool isSeparator() const;
+    bool isCheck() const;
+    void setEnabled(bool enabled);
+    bool isEnabled() const;
+    void setSubmenu(AutoPtr<Menu> submenu);
+    AutoPtr<Menu> getSubmenu() const;
+    void addItem(const MenuItem& item);
 
-    void _AddItem(const ValueList& args, KValueRef result);
-    void _AddSeparatorItem(const ValueList& args, KValueRef result);
-    void _AddCheckItem(const ValueList& args, KValueRef result);
+    void setActivationCallback(KMethodRef callback);
 
-    void SetLabel(string& label);
-    std::string& GetLabel();
-    void SetIcon(string& iconURL);
-    bool GetState();
-    void SetState(bool);
-    bool IsSeparator();
-    bool IsCheck();
-    bool IsEnabled();
-    virtual void HandleClickEvent(KObjectRef source);
-    void EnsureHasSubmenu();
-    bool ContainsItem(MenuItem* item);
-    bool ContainsSubmenu(Menu* submenu);
+private:
+    void initBinding();
+    void _isSeparator(const ValueList& args, KValueRef result);
+    void _isCheck(const ValueList& args, KValueRef result);
+    void _setLabel(const ValueList& args, KValueRef result);
+    void _getLabel(const ValueList& args, KValueRef result);
+    void _setIcon(const ValueList& args, KValueRef result);
+    void _getIcon(const ValueList& args, KValueRef result);
+    void _setState(const ValueList& args, KValueRef result);
+    void _getState(const ValueList& args, KValueRef result);
+    void _setAutoCheck(const ValueList& args, KValueRef result);
+    void _isAutoCheck(const ValueList& args, KValueRef result);
+    void _setSubmenu(const ValueList& args, KValueRef result);
+    void _getSubmenu(const ValueList& args, KValueRef result);
+    void _enable(const ValueList& args, KValueRef result);
+    void _disable(const ValueList& args, KValueRef result);
+    void _isEnabled(const ValueList& args, KValueRef result);
+    void _addItem(const ValueList& args, KValueRef result);
+    void _addSeparatorItem(const ValueList& args, KValueRef result);
+    void _addCheckItem(const ValueList& args, KValueRef result);
 
-    // Platform-specific implementation
-    virtual void SetLabelImpl(std::string newLabel) = 0;
-    virtual void SetIconImpl(std::string newIconPath) = 0;
-    virtual void SetStateImpl(bool newState) = 0;
-    virtual void SetSubmenuImpl(AutoPtr<Menu> newSubmenu) = 0;
-    virtual void SetEnabledImpl(bool enabled) = 0;
+    void createPlatformMenuItem(MenuItemType type, const std::string& label);
+    void releasePlatformMenuItem();
 
-protected:
-    MenuItemType type;
-    bool enabled;
-    std::string label;
-    std::string iconURL;
-    std::string iconPath;
-    KMethodRef callback;
-    AutoPtr<Menu> submenu;
-    std::vector<KMethodRef> eventListeners;
-    bool state;
-    bool autoCheck;
+    PlatformMenuItem* m_menuItem;
+    bool m_checkItem;
+    std::string m_iconURL;
+    KMethodRef m_activationCallback;
+
+    friend class Menu;
 };
 
 } // namespace Titanium

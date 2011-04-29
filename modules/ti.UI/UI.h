@@ -66,7 +66,7 @@ public:
 
     /* OS X specific callbacks */
     void _SetDockIcon(const ValueList& args, KValueRef result);
-    void _SetDockMenu(const ValueList& args, KValueRef result);
+    void _GetDockMenu(const ValueList& args, KValueRef result);
     void _SetBadge(const ValueList& args, KValueRef result);
     void _SetBadgeImage(const ValueList& args, KValueRef result);
 
@@ -82,12 +82,11 @@ public:
     virtual AutoPtr<Menu> GetContextMenu() = 0;
     virtual long GetIdleTime() = 0;
 
-    /* These have empty impls, because are OS X-only for now */
 #if defined(OS_OSX)
-    virtual void SetDockIcon(std::string& icon_path) {}
-    virtual void SetDockMenu(AutoPtr<Menu>) {}
-    virtual void SetBadge(std::string& badgeLabel) {}
-    virtual void SetBadgeImage(std::string& badgeImagePath) {}
+    virtual void SetDockIcon(std::string& icon_path) = 0;
+    virtual AutoPtr<Menu> GetDockMenu() = 0;
+    virtual void SetBadge(std::string& badgeLabel) = 0;
+    virtual void SetBadgeImage(std::string& badgeImagePath) = 0;
 #endif
 
     static void ErrorDialog(std::string);
