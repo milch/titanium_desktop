@@ -22,6 +22,11 @@
 
 #include <kroll/kroll.h>
 #include <Poco/Environment.h>
+@interface NSApplicationDelegateShutdown : NSObject
+
+-(void)setCanShutdown:(BOOL)canShutdown;
+
+@end
 
 @interface NSProcessInfo (LegacyWarningSurpression)
 - (unsigned int) processorCount;
@@ -93,6 +98,10 @@ void Platform::TakeScreenshotImpl(const std::string& targetFile)
 
     CGImageDestinationAddImage(imageDestination.get(), image, options.get());
     CGImageDestinationFinalize(imageDestination.get());
+}
+
+void Platform::CanShutdownImpl() {
+	[((NSApplicationDelegateShutdown *)[[NSApplication sharedApplication] delegate]) setCanShutdown:YES];
 }
 
 } // namespace Titanium

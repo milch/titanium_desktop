@@ -21,6 +21,8 @@
 @interface TitaniumApplicationDelegate : NSObject
 {
     Titanium::UIMac *binding;
+	BOOL _canShutdown;
+	NSCondition *_condition;
 }
 
 -(id)initWithBinding:(Titanium::UIMac*)binding;
@@ -28,5 +30,5 @@
 -(BOOL)application:(NSApplication*)theApplication openFile:(NSString*)filename;
 -(BOOL)application:(NSApplication*)theApplication openFiles:(NSArray*)filenames;
 -(NSApplicationTerminateReply) applicationShouldTerminate:(NSApplication*)sender;
-
+@property (nonatomic) BOOL canShutdown;
 @end

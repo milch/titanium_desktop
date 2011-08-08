@@ -22,6 +22,7 @@
 #include "MenuMac.h"
 
 @implementation TitaniumApplicationDelegate
+@synthesize canShutdown=_canShutdown;
 
 - (NSMenu *)applicationDockMenu:(NSApplication *)sender
 {
@@ -40,6 +41,8 @@
     if (self)
     {
         binding = b;
+		_canShutdown = NO;
+		_condition = [[NSCondition alloc] init];
     }
     return self;
 }
@@ -85,10 +88,29 @@
     return target->FireEvent(event) ? YES : NO;
 }
 
+-(void)setCanShutdown:(BOOL)canShutdown_ {
+	if(canShutdown_ != _canShutdown) {
+		NSLog(@"Toggling canShutdown");
+		[_condition lock];
+		_canShutdown = canShutdown_;
+		[_condition signal];
+		NSLog(@"canShutdown toggled");
+		[_condition unlock];
+	}
+}
+
 -(NSApplicationTerminateReply) applicationShouldTerminate:(NSApplication*)sender
 {
+	_canShutdown = NO;
     kroll::Host::GetInstance()->Exit(0);
-    return NO;
+	NSLog(@"Starting Shutdown loop");
+	[_condition lock];
+	while(!_canShutdown) {
+		[_condition wait];
+	}
+	NSLog(@"Out of Shutdown loop");
+	[_condition unlock];
+    return YES;
 }
 
 @end

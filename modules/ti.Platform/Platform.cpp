@@ -95,6 +95,8 @@ Platform::Platform() :
      * @tiarg[String,filename] The filename to write the image to.
      */
     this->SetMethod("takeScreenshot", &Platform::_TakeScreenshot);
+
+this->SetMethod("canShutdown", &Platform::_canShutdown);
 }
 
 Platform::~Platform()
@@ -161,6 +163,11 @@ void Platform::_TakeScreenshot(const ValueList& args, KValueRef result)
 {
     args.VerifyException("takeScreenshot", "s");
     this->TakeScreenshotImpl(args.at(0)->ToString());
+}
+
+void Platform::_canShutdown(const ValueList& args, KValueRef result)
+{
+    this->CanShutdownImpl();
 }
 
 } // namespace Titanium

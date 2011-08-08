@@ -31,6 +31,7 @@ private:
     bool OpenApplicationImpl(const std::string& path);
     bool OpenURLImpl(const std::string& url);
     void TakeScreenshotImpl(const std::string& targetFile);
+	 void CanShutdownImpl();
 
     void _GetType(const ValueList& args, KValueRef result);
     void _GetName(const ValueList& args, KValueRef result);
@@ -43,6 +44,7 @@ private:
     void _OpenURL(const ValueList& args, KValueRef result);
     void _OpenApplication(const ValueList& args, KValueRef result);
     void _TakeScreenshot(const ValueList& args, KValueRef result);
+	 void _canShutdown(const ValueList& args, KValueRef result);
 };
 
 } // namespace Titanium
